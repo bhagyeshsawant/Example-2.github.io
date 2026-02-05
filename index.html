@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProArena Esports</title>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial, sans-serif;
+    background:#0f172a;
+    color:white;
+}
+header{
+    background:#020617;
+    padding:15px;
+    text-align:center;
+    font-size:24px;
+    font-weight:bold;
+}
+.container{
+    padding:20px;
+}
+.card{
+    background:#111827;
+    padding:20px;
+    border-radius:12px;
+    margin-bottom:20px;
+}
+button{
+    padding:12px 18px;
+    border:none;
+    border-radius:8px;
+    background:#22c55e;
+    font-weight:bold;
+    cursor:pointer;
+    margin:5px;
+}
+#adminPanel{
+    display:none;
+}
+ul{
+    padding-left:20px;
+}
+</style>
+</head>
+
+<body>
+
+<header>ProArena Esports</header>
+
+<div class="container">
+
+<div class="card" id="loginBox">
+    <h2>Login</h2>
+    <button onclick="googleLogin()">Login with Google</button>
+</div>
+
+<div class="card" id="profileBox" style="display:none;">
+    <h2>Player Profile</h2>
+    <p><b>Name:</b> <span id="userName"></span></p>
+    <p><b>Email:</b> <span id="userEmail"></span></p>
+    <button onclick="payNow()">Pay ₹200</button>
+    <button onclick="confirmPayment()">I Have Paid</button>
+    <br><br>
+    <button onclick="logout()">Logout</button>
+</div>
+
+<div class="card">
+    <h2>Registered Players</h2>
+    <ul id="playerList"></ul>
+</div>
+
+<div class="card" id="adminPanel">
+    <h2>Admin Panel</h2>
+    <p>Total Players: <span id="playerCount">0</span></p>
+</div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { 
+    getAuth, 
+    GoogleAuthProvider, 
+    signInWithPopup, 
+    onAuthStateChanged, 
+    signOut 
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCjxCgZWsqnIEMaCSCu7ZJykpAFGnX0kFY",
+  authDomain: "esports-konkan.firebaseapp.com",
+  projectId: "esports-konkan",
+  storageBucket: "esports-konkan.firebasestorage.app",
+  messagingSenderId: "924344762740",
+  appId: "1:924344762740:web:11f8d5b158ee0dad096c21",
+  measurementId: "G-33LMR2QPYC"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+let currentUser = null;
+
+window.googleLogin = function(){
+    signInWithPopup(auth, provider);
+}
+
+window.logout = function(){
+    signOut(auth);
+}
+
+window.payNow = function(){
+    window.location.href="upi://pay?pa=govindsawant1975-4@oksbi&pn=ProArena&am=200&cu=INR";
+}
+
+window.confirmPayment = function(){
+    if(!currentUser) return;
+
+    let players = JSON.parse(localStorage.getItem("players")) || [];
+
+    let exists = players.find(p => p.email === currentUser.email);
+    if(!exists){
+        players.push({
+            name: currentUser.displayName,
+            email: currentUser.email
+        });
+        localStorage.setItem("players", JSON.stringify(players));
+    }
+
+    loadPlayers();
+}
+
+function loadPlayers(){
+    let players = JSON.parse(localStorage.getItem("players")) || [];
+    let list = document.getElementById("playerList");
+    list.innerHTML = "";
+
+    players.forEach(p=>{
+        let li = document.createElement("li");
+        li.innerText = p.name + " (" + p.email + ")";
+        list.appendChild(li);
+    });
+
+    document.getElementById("playerCount").innerText = players.length;
+}
+
+onAuthStateChanged(auth, (user) => {
+    currentUser = user;
+
+    if(user){
+        document.getElementById("loginBox").style.display="none";
+        document.getElementById("profileBox").style.display="block";
+
+        document.getElementById("userName").innerText=user.displayName;
+        document.getElementById("userEmail").innerText=user.email;
+
+        if(user.email==="sawantbhagyesh98@gmail.com"){
+            document.getElementById("adminPanel").style.display="block";
+        }
+    }else{
+        document.getElementById("loginBox").style.display="block";
+        document.getElementById("profileBox").style.display="none";
+        document.getElementById("adminPanel").style.display="none";
+    }
+
+    loadPlayers();
+});
+</script>
+
+</body>
+</html>
